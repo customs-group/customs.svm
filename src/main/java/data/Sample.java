@@ -1,4 +1,4 @@
-package svm;
+package data;
 
 import libsvm.svm_node;
 
@@ -25,6 +25,9 @@ public class Sample {
 
     //~ Methods ----------------------------------------------------------------
 
+    int featureNum() {
+        return this.features.length;
+    }
 }
 
 // End Sample.java

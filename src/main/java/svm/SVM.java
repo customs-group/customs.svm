@@ -1,5 +1,6 @@
 package svm;
 
+import data.SVMData;
 import libsvm.*;
 
 import java.io.BufferedWriter;
@@ -18,8 +19,14 @@ public class SVM {
 
     private static SVM instance;
 
+    /**
+     * suppress training log outputs
+     */
     private static svm_print_interface svm_print_null = s -> {};
 
+    /**
+     * date format for generating output file
+     */
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_hh:mm:ss");
 
     //~ Instance fields --------------------------------------------------------
@@ -185,32 +192,32 @@ public class SVM {
      * @param data training data
      * @return svm_parameter
      */
-    public svm_parameter updateParam(SVMData data) {
+    public svm_parameter gridSearch(SVMData data) {
         // no training outputs
         svm.svm_set_print_string_function(svm_print_null);
 
         int best_power_of_c = C_START_VALUE;
         int best_power_of_g = G_START_VALUE;
 
-        double best_hit_rate = 0.0;
+        double bestAccuracy = 0.0;
 
         for (int power_of_c = C_START_VALUE; power_of_c < C_STOP_VALUE; power_of_c += C_STEP) {
             for (int power_of_g = G_START_VALUE; power_of_g < G_STOP_VALUE; power_of_g += G_STEP) {
                 // TODO: 17-4-17 hard code 10 fold, but it seems to be reasonable
-                double hitRate = crossValidation(data, power_of_c, power_of_g, 10);
-                System.out.printf("power of c: " + power_of_c + "; power of g: " + power_of_g + "; hit rate: %.2f%%", hitRate);
-                if (hitRate > 0.6
+                double accuracy = crossValidation(data, power_of_c, power_of_g, 10);
+                System.out.printf("power of c: " + power_of_c + "; power of g: " + power_of_g + "; accuracy: %.2f%%", accuracy);
+                if (accuracy > 0.6
                         && (
-                        (hitRate > best_hit_rate)
+                        (accuracy > bestAccuracy)
                                 || (
-                                Math.abs(hitRate - best_hit_rate) < 0.00001
+                                Math.abs(accuracy - bestAccuracy) < 0.00001
                                         && power_of_c < best_power_of_c
                         ))) {
-                    best_hit_rate = hitRate;
+                    bestAccuracy = accuracy;
                     best_power_of_c = power_of_c;
                     best_power_of_g = power_of_g;
                 }
-                System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best hit rate: %.2f%%\n", best_hit_rate);
+                System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best accuracy: %.2f%%\n", bestAccuracy);
 //                if (hitRate < 0.6) { // pruning hehe
 //                    System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best hit rate: %.2f%%\n", best_hit_rate);
 //                } else if ((hitRate > best_hit_rate)
@@ -227,7 +234,7 @@ public class SVM {
         }
         param.C = Math.pow(2, best_power_of_c);
         param.gamma = Math.pow(2, best_power_of_g);
-        System.out.println("best C: " + param.C + "; best gamma: " + param.gamma + "; accuracy: " + best_hit_rate);
+        System.out.println("best C: " + param.C + "; best gamma: " + param.gamma + "; accuracy: " + bestAccuracy);
         return param;
     }
 

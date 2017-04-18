@@ -1,4 +1,4 @@
-package svm;
+package data;
 
 import io.EdAbstractFileReader;
 import libsvm.svm_node;

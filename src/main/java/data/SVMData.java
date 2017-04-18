@@ -1,4 +1,4 @@
-package svm;
+package data;
 
 import libsvm.svm_node;
 
@@ -60,7 +60,7 @@ public class SVMData {
      * @param filename file name to store data
      * @param type     type of data to be recorded, original or scaled
      */
-    public void recordData(String filename, data_type type) {
+    public void record(String filename, data_type type) {
         String _filename;
         List<svm_node[]> _set;
         /* set file name for record */
@@ -107,7 +107,7 @@ public class SVMData {
      *
      * @return scale parameter
      */
-    public double[][] scaleData() {
+    public double[][] scale() {
 		/* scale labels, not using for now
 		double y_max = -Double.MAX_VALUE;
 		double y_min = Double.MAX_VALUE;
@@ -167,9 +167,9 @@ public class SVMData {
     /**
      * scale testing data so that it has the same scale as the training data
      *
-     * @param scaleParam the result returned by scaleData on training data
+     * @param scaleParam the result returned by scale on training data
      */
-    public void scaleDataFrom(double[][] scaleParam) {
+    public void scaleFrom(double[][] scaleParam) {
 		/* scale labels, not using for now
 		double y_max = -Double.MAX_VALUE;
 		double y_min = Double.MAX_VALUE;

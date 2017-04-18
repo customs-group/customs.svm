@@ -1,5 +1,7 @@
 package svm;
 
+import data.SVMData;
+import data.SVMFileReader;
 import libsvm.svm_model;
 import org.junit.Test;
 import util.DBManager;
@@ -18,11 +20,11 @@ public class svmDemos {
         SVMData trainData = SVMFileReader.getInstance().read("./datasets/train");
         SVMData testData = SVMFileReader.getInstance().read("./datasets/test");
 
-        double[][] scaleParam = trainData.scaleData();
-        testData.scaleDataFrom(scaleParam);
+        double[][] scaleParam = trainData.scale();
+        testData.scaleFrom(scaleParam);
 
-        trainData.recordData("./results/svm/train.scaled", SVMData.data_type.scaled);
-        testData.recordData("./results/svm/test.scaled", SVMData.data_type.scaled);
+        trainData.record("./results/svm/train.scaled", SVMData.data_type.scaled);
+        testData.record("./results/svm/test.scaled", SVMData.data_type.scaled);
 
         SVM svm = SVM.getInstance();
         svm.setC(0.03125);
@@ -37,11 +39,11 @@ public class svmDemos {
         SVMData trainData = SVMFileReader.getInstance().read("./datasets/train");
         SVMData testData = SVMFileReader.getInstance().read("./datasets/test");
 
-        double[][] scaleParam = trainData.scaleData();
-        testData.scaleDataFrom(scaleParam);
+        double[][] scaleParam = trainData.scale();
+        testData.scaleFrom(scaleParam);
 
         SVM svm = SVM.getInstance();
-        svm.updateParam(trainData);
+        svm.gridSearch(trainData);
 
         svm_model model = svm.train(trainData);
         svm.test(model, trainData, "./results/svm/");
@@ -115,13 +117,13 @@ public class svmDemos {
         SVMData testData = reader.read(connection, testQuery.toString());
 
         /* scale data */
-        testData.scaleDataFrom(trainData.scaleData());
+        testData.scaleFrom(trainData.scale());
         /* record train data */
-        trainData.recordData("./results/data.train", SVMData.data_type.original);
-        trainData.recordData("./results/data.train", SVMData.data_type.scaled);
+        trainData.record("./results/data.train", SVMData.data_type.original);
+        trainData.record("./results/data.train", SVMData.data_type.scaled);
         /* record test data */
-        testData.recordData("./results/data.test", SVMData.data_type.original);
-        testData.recordData("./results/data.test", SVMData.data_type.scaled);
+        testData.record("./results/data.test", SVMData.data_type.original);
+        testData.record("./results/data.test", SVMData.data_type.scaled);
 
         DBManager.return_DB_connection(connection);
 
@@ -176,10 +178,10 @@ public class svmDemos {
 
         SVMData data = reader.read(connection, query.toString());
         DBManager.return_DB_connection(connection);
-        data.scaleData();
+        data.scale();
 
         SVM svm = SVM.getInstance();
-        svm.updateParam(data);
+        svm.gridSearch(data);
 
     }
 }
