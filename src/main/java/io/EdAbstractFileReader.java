@@ -1,6 +1,9 @@
 package io;
 
 /**
+ * an abstract base of file reader
+ * provide some basic general method
+ * <p>
  * Created by edwardlol on 2017/4/18.
  */
 public abstract class EdAbstractFileReader<T> implements EdFileReader<T> {
