@@ -1,5 +1,6 @@
 package data;
 
+import deprecated.DataSet;
 import io.EdAbstractFileReader;
 import libsvm.svm_node;
 
@@ -12,11 +13,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * singleton class to read file into {@link SVMData}
+ * singleton class to read file into {@link DataSet}
  *
  * Created by edwardlol on 2017/4/18.
  */
-public class SVMFileReader extends EdAbstractFileReader<SVMData> {
+public class SVMFileReader extends EdAbstractFileReader<Dataset> {
     //~ Static fields/initializers ---------------------------------------------
 
     private static SVMFileReader reader = null;
@@ -38,33 +39,66 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
     }
 
     //~ Methods ----------------------------------------------------------------
+//
+//    @Override
+//    public DataSet read(String file) {
+//        try (FileReader fr = new FileReader(file);
+//             BufferedReader br = new BufferedReader(fr)) {
+//
+//            DataSet dataSet = new DataSet();
+//
+//            String line = br.readLine();
+//            while (line != null) {
+//                String[] contents = line.split(seperator);
+//                // set feature num
+//                dataSet.featureNum = contents.length - 1;
+//                svm_node[] sample = new svm_node[dataSet.featureNum];
+//                dataSet.labels.add(biLabel(stod(contents[0])));
+//
+//                for (int i = 1; i < contents.length; i++) {
+//                    sample[i - 1] = new svm_node();
+//                    sample[i - 1].index = i;
+//                    sample[i - 1].value = stod(contents[i]);
+//                }
+//
+//                dataSet.originalSet.add(sample);
+//                line = br.readLine();
+//            }
+//            dataSet.sampleNum = dataSet.originalSet.size();
+//            System.out.println("DataSet preparation done! Read " + dataSet.getSampleNum() + " samples in total");
+//            return dataSet;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+//    }
 
-    @Override
-    public SVMData read(String file) {
+    public Dataset read(String file) {
         try (FileReader fr = new FileReader(file);
              BufferedReader br = new BufferedReader(fr)) {
 
-            SVMData svmData = new SVMData();
+            Dataset dataset = new Dataset();
 
             String line = br.readLine();
             while (line != null) {
                 String[] contents = line.split(seperator);
                 // set feature num
-                svmData.featureNum = contents.length - 1;
-                svm_node[] sample = new svm_node[svmData.featureNum];
-                svmData.labels.add(biLabel(stod(contents[0])));
-                for (int i = 0; i < svmData.featureNum; i++) {
-                    sample[i] = new svm_node();
+                dataset.featureNum = contents.length - 1;
+                Sample sample = new Sample();
+                sample.label = biLabel(stod(contents[0]));
 
-                    sample[i].index = i + 1;
-                    sample[i].value = stod(contents[i + 1]);
+                for (int i = 1; i < contents.length; i++) {
+                    svm_node node = new svm_node();
+                    node.index = i;
+                    node.value = stod(contents[i]);
+                    sample.add(node);
                 }
-                svmData.originalSet.add(sample);
+
+                dataset.add(sample);
                 line = br.readLine();
             }
-            svmData.sampleNum = svmData.originalSet.size();
-            System.out.println("SVMData preparation done! Read " + svmData.getSampleNum() + " samples in total");
-            return svmData;
+            System.out.println("DataSet preparation done! Read " + dataset.size() + " samples in total");
+            return dataset;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -79,17 +113,17 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
      * @param query      query to select data from db
      * @return
      */
-    public SVMData read(Connection connection, String query) {
+    public DataSet read(Connection connection, String query) {
         try (PreparedStatement pstmt = connection.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
 
-            SVMData svmData = new SVMData();
+            DataSet dataSet = new DataSet();
 
-            svmData.featureNum = rs.getMetaData().getColumnCount() - 1;
+            dataSet.featureNum = rs.getMetaData().getColumnCount() - 1;
 
             while (rs.next()) {
-                svm_node[] sample = new svm_node[svmData.featureNum];
-                for (int i = 0; i < svmData.featureNum; i++) {
+                svm_node[] sample = new svm_node[dataSet.featureNum];
+                for (int i = 0; i < dataSet.featureNum; i++) {
                     sample[i] = new svm_node();
 
                     sample[i].index = i + 1;
@@ -103,13 +137,13 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
                         // to be continued
                     }
                 }
-                svmData.originalSet.add(sample);
-                svmData.labels.add(biLabel(stod(rs.getString(1))));
+                dataSet.originalSet.add(sample);
+                dataSet.labels.add(biLabel(stod(rs.getString(1))));
             }
-            svmData.sampleNum = svmData.originalSet.size();
+            dataSet.sampleNum = dataSet.originalSet.size();
 
-            System.out.println("SVMData preparation done! " + svmData.getSampleNum() + " samples in total");
-            return svmData;
+            System.out.println("DataSet preparation done! " + dataSet.getSampleNum() + " samples in total");
+            return dataSet;
         } catch (SQLException e) {
             e.printStackTrace();
             return null;

@@ -1,4 +1,4 @@
-package data;
+package deprecated;
 
 import libsvm.svm_node;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
 /**
  * Created by edwardlol on 2017/4/18.
  */
-public class SVMData {
+public class DataSet {
     //~ Static fields/initializers ---------------------------------------------
 
     public enum data_type {original, scaled}
@@ -78,7 +78,7 @@ public class SVMData {
                 return;
         }
 
-        try (FileWriter fw = new FileWriter(filename);
+        try (FileWriter fw = new FileWriter(_filename);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
             for (int i = 0; i < this.sampleNum; i++) {
@@ -95,7 +95,7 @@ public class SVMData {
                 bw.append('\n');
                 bw.flush();
             }
-            System.out.println("SVMData record done! see " + _filename);
+            System.out.println("DataSet record done! see " + _filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -108,10 +108,6 @@ public class SVMData {
      * @return scale parameter
      */
     public double[][] scale() {
-		/* scale labels, not using for now
-		double y_max = -Double.MAX_VALUE;
-		double y_min = Double.MAX_VALUE;
-		*/
 
 		/* step 0: initiate scale param */
         double[][] scaleParam = new double[this.featureNum + 1][2];
@@ -170,10 +166,6 @@ public class SVMData {
      * @param scaleParam the result returned by scale on training data
      */
     public void scaleFrom(double[][] scaleParam) {
-		/* scale labels, not using for now
-		double y_max = -Double.MAX_VALUE;
-		double y_min = Double.MAX_VALUE;
-		*/
 
 		/* step 1: initiate feature bound */
         this.scaleUpperBound = scaleParam[0][0];
@@ -186,7 +178,7 @@ public class SVMData {
             feature_min[i] = scaleParam[i + 1][1];
         }
 
-		/* pass 3: scale */
+		/* pass 2: scale */
         for (int i = 0; i < this.sampleNum; i++) {
             svm_node[] sample = this.originalSet.get(i);
             svm_node[] scaledSample = new svm_node[this.featureNum];
@@ -243,4 +235,4 @@ public class SVMData {
     }
 }
 
-// End SVMData.java
+// End DataSet.java

@@ -1,6 +1,7 @@
 package svm;
 
-import data.SVMData;
+import deprecated.DataSet;
+import data.Dataset;
 import data.SVMFileReader;
 import libsvm.svm_model;
 import org.junit.Test;
@@ -16,28 +17,57 @@ public class svmDemos {
     //~ Methods ----------------------------------------------------------------
 
     @Test
-    public void predictFileDemo() {
-        SVMData trainData = SVMFileReader.getInstance().read("./datasets/train");
-        SVMData testData = SVMFileReader.getInstance().read("./datasets/test");
+    public void readDemo() {
+        Dataset trainData = SVMFileReader.getInstance().read2("./datasets/train");
+        Dataset testData = SVMFileReader.getInstance().read2("./datasets/test");
 
         double[][] scaleParam = trainData.scale();
         testData.scaleFrom(scaleParam);
 
-        trainData.record("./results/svm/train.scaled", SVMData.data_type.scaled);
-        testData.record("./results/svm/test.scaled", SVMData.data_type.scaled);
+        SVM2 svm = SVM2.getInstance();
+        svm.gridSearch(trainData);
+
+        svm_model model = svm.train(trainData);
+        svm.test(model, trainData, "./results/");
+        svm.test(model, testData, "./results/");
+    }
+
+    @Test
+    public void trainFileDemo() {
+        DataSet trainData = SVMFileReader.getInstance().read("./datasets/train");
+        DataSet testData = SVMFileReader.getInstance().read("./datasets/test");
+
+        double[][] scaleParam = trainData.scale();
+        testData.scaleFrom(scaleParam);
+
+        trainData.record("./results/svm/train.scaled", DataSet.data_type.scaled);
+        testData.record("./results/svm/test.scaled", DataSet.data_type.scaled);
 
         SVM svm = SVM.getInstance();
         svm.setC(0.03125);
         svm.setGamma(0.03125);
         svm_model model = svm.train(trainData);
+        svm.saveModel("./results/svm/model");
         svm.test(model, trainData, "./results/svm/train");
         svm.test(model, testData, "./results/svm/test");
     }
 
     @Test
+    public void predictFileDemo() {
+        DataSet testData = SVMFileReader.getInstance().read("./datasets/test");
+
+        testData.record("./results/svm/test.scaled", DataSet.data_type.scaled);
+
+        SVM svm = SVM.getInstance();
+        svm_model model = svm.loadModel("./results/svm/model");
+        svm.test(model, testData, "./results/svm/test");
+
+    }
+
+    @Test
     public void gridSearchFileDemo() {
-        SVMData trainData = SVMFileReader.getInstance().read("./datasets/train");
-        SVMData testData = SVMFileReader.getInstance().read("./datasets/test");
+        DataSet trainData = SVMFileReader.getInstance().read("./datasets/train");
+        DataSet testData = SVMFileReader.getInstance().read("./datasets/test");
 
         double[][] scaleParam = trainData.scale();
         testData.scaleFrom(scaleParam);
@@ -113,17 +143,17 @@ public class svmDemos {
 
         Connection connection = DBManager.get_DB_connection();
         SVMFileReader reader = SVMFileReader.getInstance();
-        SVMData trainData = reader.read(connection, trainQuery.toString());
-        SVMData testData = reader.read(connection, testQuery.toString());
+        DataSet trainData = reader.read(connection, trainQuery.toString());
+        DataSet testData = reader.read(connection, testQuery.toString());
 
         /* scale data */
         testData.scaleFrom(trainData.scale());
         /* record train data */
-        trainData.record("./results/data.train", SVMData.data_type.original);
-        trainData.record("./results/data.train", SVMData.data_type.scaled);
+        trainData.record("./results/data.train", DataSet.data_type.original);
+        trainData.record("./results/data.train", DataSet.data_type.scaled);
         /* record test data */
-        testData.record("./results/data.test", SVMData.data_type.original);
-        testData.record("./results/data.test", SVMData.data_type.scaled);
+        testData.record("./results/data.test", DataSet.data_type.original);
+        testData.record("./results/data.test", DataSet.data_type.scaled);
 
         DBManager.return_DB_connection(connection);
 
@@ -176,7 +206,7 @@ public class svmDemos {
 
         SVMFileReader reader = SVMFileReader.getInstance();
 
-        SVMData data = reader.read(connection, query.toString());
+        DataSet data = reader.read(connection, query.toString());
         DBManager.return_DB_connection(connection);
         data.scale();
 
