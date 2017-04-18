@@ -5,6 +5,9 @@ import libsvm.svm_node;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -17,12 +20,36 @@ public class SVMData {
 
     //~ Instance fields --------------------------------------------------------
 
-    Vector<Double> labels = new Vector<>();
-    Vector<svm_node[]> originalSet = new Vector<>();
-    private Vector<svm_node[]> scaledSet = new Vector<>();
+    /**
+     * a list of lables of this dataset
+     */
+    List<Double> labels = new ArrayList<>();
+
+    /**
+     * a list of samples of this dataset
+     */
+    List<svm_node[]> originalSet = new ArrayList<>();
+
+    /**
+     * a list of scaled samples of this dataset
+     */
+    private List<svm_node[]> scaledSet = new ArrayList<>();
+
+    /**
+     * number of samples in this dataset
+     */
     int sampleNum = 0;
+
+    /**
+     * number of features of every sample
+     */
     int featureNum = 0;
+
+    // TODO: 17-4-18 add this
+    boolean isTraining;
+
     private double scaleUpperBound = 1;
+
     private double scaleLowerBound = -1;
 
     //~ Methods ----------------------------------------------------------------
@@ -32,11 +59,10 @@ public class SVMData {
      *
      * @param filename file name to store data
      * @param type     type of data to be recorded, original or scaled
-     * @throws IOException
      */
-    public void record_data(String filename, data_type type) {
+    public void recordData(String filename, data_type type) {
         String _filename;
-        Vector<svm_node[]> _set;
+        List<svm_node[]> _set;
         /* set file name for record */
         switch (type) {
             case original:
@@ -52,22 +78,22 @@ public class SVMData {
                 return;
         }
 
-        try (FileWriter fileWriter = new FileWriter(filename);
-             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+        try (FileWriter fw = new FileWriter(filename);
+             BufferedWriter bw = new BufferedWriter(fw)) {
 
             for (int i = 0; i < this.sampleNum; i++) {
-                bufferedWriter.append(Double.toString(this.labels.get(i))).append(' ');
+                bw.append(Double.toString(this.labels.get(i))).append(' ');
 
                 svm_node[] sample = _set.get(i);
 
                 for (int j = 0; j < this.featureNum; j++) {
-                    bufferedWriter.append(Integer.toString(sample[j].index))
+                    bw.append(Integer.toString(sample[j].index))
                             .append(':')
                             .append(Double.toString(sample[j].value))
                             .append(' ');
                 }
-                bufferedWriter.append('\n');
-                bufferedWriter.flush();
+                bw.append('\n');
+                bw.flush();
             }
             System.out.println("SVMData record done! see " + _filename);
         } catch (IOException e) {
@@ -184,7 +210,7 @@ public class SVMData {
 
     //~ Getter/setter Methods --------------------------------------------------
 
-    public Vector<svm_node[]> getData(data_type type) {
+    public List<svm_node[]> getData(data_type type) {
         switch (type) {
             case original:
                 return this.originalSet;
@@ -196,7 +222,7 @@ public class SVMData {
         }
     }
 
-    public Vector<Double> getLabels() {
+    public List<Double> getLabels() {
         return this.labels;
     }
 

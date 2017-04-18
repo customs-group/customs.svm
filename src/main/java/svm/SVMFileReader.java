@@ -12,6 +12,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * singleton class to read file into {@link SVMData}
+ *
  * Created by edwardlol on 2017/4/18.
  */
 public class SVMFileReader extends EdAbstractFileReader<SVMData> {
@@ -45,13 +47,12 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
             SVMData svmData = new SVMData();
 
             String line = br.readLine();
-
             while (line != null) {
                 String[] contents = line.split(seperator);
                 // set feature num
                 svmData.featureNum = contents.length - 1;
                 svm_node[] sample = new svm_node[svmData.featureNum];
-                svmData.labels.add(normalizeLabel(stod(contents[0])));
+                svmData.labels.add(biLabel(stod(contents[0])));
                 for (int i = 0; i < svmData.featureNum; i++) {
                     sample[i] = new svm_node();
 
@@ -61,7 +62,6 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
                 svmData.originalSet.add(sample);
                 line = br.readLine();
             }
-
             svmData.sampleNum = svmData.originalSet.size();
             System.out.println("SVMData preparation done! Read " + svmData.getSampleNum() + " samples in total");
             return svmData;
@@ -71,6 +71,14 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
         }
     }
 
+    /**
+     * read data from a db
+     * may be removed in the future
+     *
+     * @param connection db connection
+     * @param query      query to select data from db
+     * @return
+     */
     public SVMData read(Connection connection, String query) {
         try (PreparedStatement pstmt = connection.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
@@ -96,7 +104,7 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
                     }
                 }
                 svmData.originalSet.add(sample);
-                svmData.labels.add(normalizeLabel(stod(rs.getString(1))));
+                svmData.labels.add(biLabel(stod(rs.getString(1))));
             }
             svmData.sampleNum = svmData.originalSet.size();
 
@@ -113,16 +121,18 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
     /**
      * transfer String to Double, in case some features are "null", "I", "E" or ""
      * where "I" refers to "Import" and "E" refers to "Export"
+     * also support svm example data, which is like"index:value"
+     * in this case this method will ignore the index and only read the value
      *
      * @param string feature in string
      * @return feature in double
      */
-    private static Double stod(String string) {
-        Double result = 2.0; // should handle this error: "cannnot convert string to Double"
+    private static double stod(String string) {
+        double result = 2.0d; // should handle this error: "cannnot convert string to Double"
         if (string == null || string.equals("") || string.equals("null") || string.equals("I")) {
-            result = 0.0;
+            result = 0.0d;
         } else if (string.equals("E")) {
-            result = 1.0;
+            result = 1.0d;
         } else {
             try {
                 result = Double.parseDouble(string);
@@ -133,20 +143,28 @@ public class SVMFileReader extends EdAbstractFileReader<SVMData> {
                 } catch (NumberFormatException e2) {
                     e2.printStackTrace();
                 }
-
             }
         }
         return result;
     }
 
     /**
-     * normalize the labels to 1 or -1, instead of 0 or 1
+     * normalize the labels to 1 or -1, so that there will only be 2 classes in the dataset
+     * and also, -1 and 1 are better labels than 0 and 1
+     * the default action is to make nagative and 0 label -1, others 1
+     * be careful of using this method
      *
      * @param label original label
      * @return normalize label
      */
-    private static Double normalizeLabel(Double label) {
-        return (Math.abs(label - 0.0d) < 0.00001 || Math.abs(label + 1.0d) < 0.00001) ? -1.0d : 1.0d;
+    private static double biLabel(double label) {
+        if (label < 0.0d) {
+            return -1.0d;
+        }
+        if (Math.abs(label - 0.0d) < 0.00001) {
+            return -1.0d;
+        }
+        return 1.0d;
     }
 }
 

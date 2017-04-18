@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -75,7 +76,7 @@ public class SVM {
      * @param labels train labels
      * @return model
      */
-    private svm_model train(Vector<svm_node[]> set, Vector<Double> labels, boolean saveModel) {
+    private svm_model train(List<svm_node[]> set, List<Double> labels, boolean saveModel) {
 
 		/* set svm problem */
         svm_problem problem = new svm_problem();
@@ -114,8 +115,8 @@ public class SVM {
      */
     public void test(svm_model model, SVMData data, String resultFile) {
 
-        Vector<svm_node[]> set = data.getData(SVMData.data_type.scaled);
-        Vector<Double> labels = data.getLabels();
+        List<svm_node[]> set = data.getData(SVMData.data_type.scaled);
+        List<Double> labels = data.getLabels();
 
         /* preparation for the log file */
         Date now = new Date();
@@ -240,8 +241,8 @@ public class SVM {
      * @return best accuracy under this set of c and g
      */
     private double crossValidation(SVMData data, int power_of_c, int power_of_g, int fold_n) {
-        Vector<svm_node[]> set = data.getData(SVMData.data_type.scaled);
-        Vector<Double> labels = data.getLabels();
+        List<svm_node[]> set = data.getData(SVMData.data_type.scaled);
+        List<Double> labels = data.getLabels();
 
         param.C = Math.pow(C_BASE, power_of_c);
         param.gamma = Math.pow(G_BASE, power_of_g);

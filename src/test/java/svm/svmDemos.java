@@ -11,12 +11,6 @@ import java.util.Vector;
  * Created by edwardlol on 2017/4/18.
  */
 public class svmDemos {
-    //~ Static fields/initializers ---------------------------------------------
-
-    //~ Instance fields --------------------------------------------------------
-
-    //~ Constructors -----------------------------------------------------------
-
     //~ Methods ----------------------------------------------------------------
 
     @Test
@@ -27,8 +21,8 @@ public class svmDemos {
         double[][] scaleParam = trainData.scaleData();
         testData.scaleDataFrom(scaleParam);
 
-        trainData.record_data("./results/svm/train.scaled", SVMData.data_type.scaled);
-        testData.record_data("./results/svm/test.scaled", SVMData.data_type.scaled);
+        trainData.recordData("./results/svm/train.scaled", SVMData.data_type.scaled);
+        testData.recordData("./results/svm/test.scaled", SVMData.data_type.scaled);
 
         SVM svm = SVM.getInstance();
         svm.setC(0.03125);
@@ -123,11 +117,11 @@ public class svmDemos {
         /* scale data */
         testData.scaleDataFrom(trainData.scaleData());
         /* record train data */
-        trainData.record_data("./results/data.train", SVMData.data_type.original);
-        trainData.record_data("./results/data.train", SVMData.data_type.scaled);
+        trainData.recordData("./results/data.train", SVMData.data_type.original);
+        trainData.recordData("./results/data.train", SVMData.data_type.scaled);
         /* record test data */
-        testData.record_data("./results/data.test", SVMData.data_type.original);
-        testData.record_data("./results/data.test", SVMData.data_type.scaled);
+        testData.recordData("./results/data.test", SVMData.data_type.original);
+        testData.recordData("./results/data.test", SVMData.data_type.scaled);
 
         DBManager.return_DB_connection(connection);
 
