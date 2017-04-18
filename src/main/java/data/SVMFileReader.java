@@ -1,6 +1,5 @@
 package data;
 
-import deprecated.DataSet;
 import io.EdAbstractFileReader;
 import libsvm.svm_node;
 
@@ -13,19 +12,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * singleton class to read file into {@link DataSet}
+ * Singleton class to generate a {@link Dataset} from file
+ * <p>
  *
- * Created by edwardlol on 2017/4/18.
+ * @author edwardlol
+ *         Created by edwardlol on 2017/4/18.
  */
 public class SVMFileReader extends EdAbstractFileReader<Dataset> {
     //~ Static fields/initializers ---------------------------------------------
 
     private static SVMFileReader reader = null;
 
-    //~ Instance fields --------------------------------------------------------
-
     //~ Constructors -----------------------------------------------------------
 
+    /**
+     * Private constructor to prevent instantiating.
+     * Also initiate the default seperator and column number.
+     */
     private SVMFileReader() {
         seperator = " ";
         columnNumber = Integer.MAX_VALUE;
@@ -39,40 +42,14 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
     }
 
     //~ Methods ----------------------------------------------------------------
-//
-//    @Override
-//    public DataSet read(String file) {
-//        try (FileReader fr = new FileReader(file);
-//             BufferedReader br = new BufferedReader(fr)) {
-//
-//            DataSet dataSet = new DataSet();
-//
-//            String line = br.readLine();
-//            while (line != null) {
-//                String[] contents = line.split(seperator);
-//                // set feature num
-//                dataSet.featureNum = contents.length - 1;
-//                svm_node[] sample = new svm_node[dataSet.featureNum];
-//                dataSet.labels.add(biLabel(stod(contents[0])));
-//
-//                for (int i = 1; i < contents.length; i++) {
-//                    sample[i - 1] = new svm_node();
-//                    sample[i - 1].index = i;
-//                    sample[i - 1].value = stod(contents[i]);
-//                }
-//
-//                dataSet.originalSet.add(sample);
-//                line = br.readLine();
-//            }
-//            dataSet.sampleNum = dataSet.originalSet.size();
-//            System.out.println("DataSet preparation done! Read " + dataSet.getSampleNum() + " samples in total");
-//            return dataSet;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//    }
 
+    /**
+     * Read data from file and generate a {@link Dataset}.
+     *
+     * @param file the source file
+     * @return a {@link Dataset}
+     */
+    @Override
     public Dataset read(String file) {
         try (FileReader fr = new FileReader(file);
              BufferedReader br = new BufferedReader(fr)) {
@@ -82,22 +59,22 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
             String line = br.readLine();
             while (line != null) {
                 String[] contents = line.split(seperator);
-                // set feature num
+
                 dataset.featureNum = contents.length - 1;
+
                 Sample sample = new Sample();
                 sample.label = biLabel(stod(contents[0]));
 
                 for (int i = 1; i < contents.length; i++) {
-                    svm_node node = new svm_node();
-                    node.index = i;
-                    node.value = stod(contents[i]);
-                    sample.add(node);
+                    svm_node feature = new svm_node();
+                    feature.index = i;
+                    feature.value = stod(contents[i]);
+                    sample.add(feature);
                 }
-
                 dataset.add(sample);
                 line = br.readLine();
             }
-            System.out.println("DataSet preparation done! Read " + dataset.size() + " samples in total");
+            System.out.println("Dataset preparation done! Read " + dataset.size() + " samples in total");
             return dataset;
         } catch (IOException e) {
             e.printStackTrace();
@@ -111,39 +88,45 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
      *
      * @param connection db connection
      * @param query      query to select data from db
-     * @return
+     * @return {@link Dataset}
+     * @throws RuntimeException when there are non-double feature
      */
-    public DataSet read(Connection connection, String query) {
+    public Dataset read(Connection connection, String query) throws RuntimeException {
         try (PreparedStatement pstmt = connection.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
 
-            DataSet dataSet = new DataSet();
+            Dataset dataset = new Dataset();
 
-            dataSet.featureNum = rs.getMetaData().getColumnCount() - 1;
+            dataset.featureNum = rs.getMetaData().getColumnCount() - 1;
 
             while (rs.next()) {
-                svm_node[] sample = new svm_node[dataSet.featureNum];
-                for (int i = 0; i < dataSet.featureNum; i++) {
-                    sample[i] = new svm_node();
+                Sample sample = new Sample();
+                sample.label = stod(rs.getString(1));
 
-                    sample[i].index = i + 1;
+                for (int i = 1; i <= dataset.featureNum; i++) {
+                    svm_node feature = new svm_node();
+                    feature.index = i;
 
-                    if (rs.getObject(i + 2).getClass().getName().equals("java.lang.String")) {
-                        sample[i].value = stod(rs.getString(i + 2));
-                    } else if ((rs.getObject(i + 2).getClass().getName().equals("java.lang.Long"))
-                            || (rs.getObject(i + 2).getClass().getName().equals("java.math.BigDecimal"))) {
-                        sample[i].value = rs.getDouble(i + 2);
-                    } else {
-                        // to be continued
+                    String elemClassName = rs.getObject(i + 1).getClass().getName();
+                    switch (elemClassName) {
+                        case "java.lang.String":
+                            feature.value = stod(rs.getString(i + 1));
+                            break;
+                        case "java.lang.Long":
+                        case "java.lang.Double":
+                        case "java.math.BigDecimal":
+                            feature.value = rs.getDouble(i + 1);
+                            break;
+                        default:
+                            // to be continued
+                            throw new RuntimeException("feature must be double! get " + elemClassName);
                     }
+                    sample.add(feature);
                 }
-                dataSet.originalSet.add(sample);
-                dataSet.labels.add(biLabel(stod(rs.getString(1))));
+                dataset.add(sample);
             }
-            dataSet.sampleNum = dataSet.originalSet.size();
-
-            System.out.println("DataSet preparation done! " + dataSet.getSampleNum() + " samples in total");
-            return dataSet;
+            System.out.println("Dataset preparation done! Read " + dataset.getSampleNum() + " samples in total");
+            return dataset;
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
@@ -153,7 +136,7 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
     //~ tool Methods -----------------------------------------------------------
 
     /**
-     * transfer String to Double, in case some features are "null", "I", "E" or ""
+     * Parse a {@link String} object to a {@link Double} object, in case some features are "null", "I", "E" or ""
      * where "I" refers to "Import" and "E" refers to "Export"
      * also support svm example data, which is like"index:value"
      * in this case this method will ignore the index and only read the value
@@ -161,7 +144,7 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
      * @param string feature in string
      * @return feature in double
      */
-    private static double stod(String string) {
+    public static double stod(String string) {
         double result = 2.0d; // should handle this error: "cannnot convert string to Double"
         if (string == null || string.equals("") || string.equals("null") || string.equals("I")) {
             result = 0.0d;

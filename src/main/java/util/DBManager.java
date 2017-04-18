@@ -8,31 +8,39 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Created by edwardlol on 2017/4/18.
+ * A helper class with useful static database management functions.
+ * <p>
+ *
+ * @author edwardlol
+ *         Created by edwardlol on 2017/4/18.
  */
-public class DBManager {
+public final class DBManager {
     //~ Static fields/initializers ---------------------------------------------
 
     private static final String DB_DRIVER = "com.mysql.jdbc.Driver";
     private static final String config_file = "./custom_proj.conf";
 
-    private static String DB_CONNECTION = "";
-    private static String DB_USER = "";
-    private static String DB_PASSWORD = "";
-
-    //~ Instance fields --------------------------------------------------------
+    private static String DB_CONNECTION;
+    private static String DB_USER;
+    private static String DB_PASSWORD;
 
     //~ Constructors -----------------------------------------------------------
+
+    /**
+     * Private constructor to prevent instantiating.
+     */
+    private DBManager() {
+    }
 
     //~ Methods ----------------------------------------------------------------
 
     public static Connection get_DB_connection() {
         Connection connection = null;
         // read config file
-        try(FileReader file_reader = new FileReader(config_file);
-            BufferedReader buffered_reader = new BufferedReader(file_reader)) {
+        try (FileReader fr = new FileReader(config_file);
+             BufferedReader br = new BufferedReader(fr)) {
 
-            String config = buffered_reader.readLine();
+            String config = br.readLine();
             while (config != null) {
                 String[] result = config.split(": ");
                 switch (result[0]) {
@@ -48,7 +56,7 @@ public class DBManager {
                     default:
                         break;
                 }
-                config = buffered_reader.readLine();
+                config = br.readLine();
             }
         } catch (IOException e) {
             System.out.println("read config file failed!");

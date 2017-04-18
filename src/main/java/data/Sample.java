@@ -6,7 +6,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
- * sample of svm data
+ * The data structure of of svm sample data.
+ * Including a label and several features.
  *
  * Created by edwardlol on 17-4-18.
  */

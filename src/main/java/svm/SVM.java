@@ -1,6 +1,7 @@
 package svm;
 
-import deprecated.DataSet;
+import data.Dataset;
+import data.Sample;
 import libsvm.*;
 
 import java.io.BufferedWriter;
@@ -8,8 +9,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-import java.util.Vector;
 
 /**
  * Created by edwardlol on 2017/4/18.
@@ -67,31 +66,19 @@ public class SVM {
 
     /**
      * train svm model
+     * @param dataset
      *
-     * @param data data used to train the model
-     * @return model
+     * @return
      */
-    public svm_model train(DataSet data) {
-        return train(data.getData(DataSet.data_type.scaled), data.getLabels());
-    }
-
-    /**
-     * train svm model
-     *
-     * @param set    train set
-     * @param labels train labels
-     * @return model
-     */
-    private svm_model train(List<svm_node[]> set, List<Double> labels) {
-
+    public svm_model train(Dataset dataset) {
 		/* set svm problem */
         svm_problem problem = new svm_problem();
-        problem.l = set.size();
+        problem.l = dataset.size();
         problem.x = new svm_node[problem.l][];
         problem.y = new double[problem.l];
         for (int i = 0; i < problem.l; i++) {
-            problem.x[i] = set.get(i);
-            problem.y[i] = labels.get(i);
+            problem.x[i] = dataset.get(i).getFeatureArray();
+            problem.y[i] = dataset.get(i).label;
         }
 
         /* train svm model */
@@ -133,40 +120,37 @@ public class SVM {
      * @param model model trained by train
      * @param data  data used to test the model
      */
-    public void test(svm_model model, DataSet data, String resultFile) {
-
-        List<svm_node[]> set = data.getData(DataSet.data_type.scaled);
-        List<Double> labels = data.getLabels();
+    public void test(svm_model model, Dataset data, String resultFile) {
 
         /* preparation for the log file */
         Date now = new Date();
         String suffix = dateFormat.format(now);
 
-        try (FileWriter fileWriter = new FileWriter(resultFile + suffix + ".log");
-             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+        try (FileWriter fw = new FileWriter(resultFile + suffix + ".log");
+             BufferedWriter bw = new BufferedWriter(fw)) {
 
             int hit = 0;
 
             for (int i = 0; i < data.getSampleNum(); i++) {
-                svm_node[] sample = set.get(i);
-                double real_label = labels.get(i);
-                double predict_label = svm.svm_predict(model, sample);
+                svm_node[] features = data.get(i).getFeatureArray();
+                double realLabel = data.get(i).label;
+                double predictLabel = svm.svm_predict(model, features);
 
-                bufferedWriter.append("predict label: ")
-                        .append(Double.toString(predict_label))
+                bw.append("predict label: ")
+                        .append(Double.toString(predictLabel))
                         .append("; real label: ")
-                        .append(Double.toString(real_label))
+                        .append(Double.toString(realLabel))
                         .append(' ');
 
                 for (int j = 0; j < data.getFeatureNum(); j++) {
-                    bufferedWriter.append(Integer.toString(sample[j].index))
+                    bw.append(Integer.toString(features[j].index))
                             .append(':')
-                            .append(Double.toString(sample[j].value))
+                            .append(Double.toString(features[j].value))
                             .append(' ');
                 }
-                bufferedWriter.append('\n');
-                bufferedWriter.flush();
-                if (Math.abs(predict_label - real_label) < 0.001) {
+                bw.append('\n');
+                bw.flush();
+                if (Math.abs(predictLabel - realLabel) < 0.001) {
                     hit++;
                 }
             }
@@ -181,18 +165,18 @@ public class SVM {
      * valid model accuracy
      *
      * @param model  model to valid
-     * @param set    test set
-     * @param labels test labels
+     * @param dataset    test set
+     *
      * @return total hit num in test set
      */
-    private int valid(svm_model model, Vector<svm_node[]> set, Vector<Double> labels) {
+    private int valid(svm_model model, Dataset dataset) {
         int hit = 0;
 
-        for (int i = 0; i < set.size(); i++) {
-            svm_node[] sample = set.get(i);
-            double real_label = labels.get(i);
-            double predict_label = svm.svm_predict(model, sample);
-            if (Math.abs(predict_label - real_label) < 0.001) {
+        for (Sample aDataset : dataset) {
+            svm_node[] features = aDataset.getFeatureArray();
+            double realLabel = aDataset.label;
+            double predictLabel = svm.svm_predict(model, features);
+            if (Math.abs(predictLabel - realLabel) < 0.001) {
                 hit++;
             }
         }
@@ -205,7 +189,7 @@ public class SVM {
      * @param data training data
      * @return svm_parameter
      */
-    public svm_parameter gridSearch(DataSet data) {
+    public svm_parameter gridSearch(Dataset data) {
         // no training outputs
         svm.svm_set_print_string_function(svm_print_null);
 
@@ -254,47 +238,48 @@ public class SVM {
     /**
      * do cross validation
      *
-     * @param data       training data
-     * @param power_of_c power of c, see{@link svm_parameter#C}
-     * @param power_of_g power of g, see{@link svm_parameter#gamma}
-     * @param fold_n     the number n of n fold validation
+     * @param dataset       training data
+     * @param power_of_c    power of c, see{@link svm_parameter#C}
+     * @param power_of_g    power of g, see{@link svm_parameter#gamma}
+     * @param numFolds      the number n of n fold validation
+     *
      * @return best accuracy under this set of c and g
      */
-    private double crossValidation(DataSet data, int power_of_c, int power_of_g, int fold_n) {
-        List<svm_node[]> set = data.getData(DataSet.data_type.scaled);
-        List<Double> labels = data.getLabels();
+    private double crossValidation(Dataset dataset, int power_of_c, int power_of_g, int numFolds) {
+        if (!dataset.isScaled()) {
+            dataset.scale();
+        }
 
-        param.C = Math.pow(C_BASE, power_of_c);
-        param.gamma = Math.pow(G_BASE, power_of_g);
+        this.param.C = Math.pow(C_BASE, power_of_c);
+        this.param.gamma = Math.pow(G_BASE, power_of_g);
 
-        int total_hit = 0;
-        for (int i = 0; i <= fold_n; i++) {
-            Vector<svm_node[]> trainData = new Vector<>();
-            Vector<svm_node[]> validData = new Vector<>();
-            Vector<Double> trainLabels = new Vector<>();
-            Vector<Double> validLabels = new Vector<>();
+        int totalHit = 0;
+        // valid set length
+        int vsLen = dataset.size() / numFolds;
 
-            int vs_len = set.size() / fold_n;
-            int vs_start = i * vs_len;
-            int vs_end = i == fold_n ? set.size() : (i + 1) * vs_len;
+        for (int i = 0; i <= numFolds; i++) {
+            Dataset trainData = new Dataset();
+            Dataset validData = new Dataset();
 
-            for (int j = 0; j < vs_start; j++) {
-                trainData.add(set.get(j));
-                trainLabels.add(labels.get(j));
+            // valid set start index
+            int vsStart = i * vsLen;
+            // valid set end index
+            int vsEnd = i == numFolds ? dataset.size() : (i + 1) * vsLen;
+
+            for (int j = 0; j < vsStart; j++) {
+                trainData.add(dataset.get(j).clone());
             }
-            for (int j = vs_start; j < vs_end; j++) {
-                validData.add(set.get(j));
-                validLabels.add(labels.get(j));
+            for (int j = vsStart; j < vsEnd; j++) {
+                validData.add(dataset.get(j).clone());
             }
-            for (int j = vs_end; j < set.size(); j++) {
-                trainData.add(set.get(j));
-                trainLabels.add(labels.get(j));
+            for (int j = vsEnd; j < dataset.size(); j++) {
+                trainData.add(dataset.get(j).clone());
             }
-            svm_model model = train(trainData, trainLabels);
-            total_hit += valid(model, validData, validLabels);
+            svm_model model = train(trainData);
+            totalHit += valid(model, validData);
         }
         // n is in set.size()
-        return 100.0 * total_hit / set.size();
+        return 100.0 * totalHit / dataset.size();
     }
 
     //~ Getter/Setter Methods --------------------------------------------------
