@@ -75,6 +75,7 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
             System.out.println("Dataset preparation done! Read " + dataset.size() + " samples in total.");
             return dataset;
         } catch (IOException e) {
+            System.err.println("Dataset preparation failed!");
             e.printStackTrace();
             return null;
         }

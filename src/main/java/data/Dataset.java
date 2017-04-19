@@ -52,7 +52,7 @@ public class Dataset extends ArrayList<Sample> {
      *
      * @return scale parameter, see{@link this#linearScale(double, double)}
      */
-    public double[][] linearScale() {
+    public LinearScaleParam linearScale() {
         return linearScale(-1.0d, 1.0d);
     }
 
@@ -61,29 +61,18 @@ public class Dataset extends ArrayList<Sample> {
      *
      * @param lowerBound scale lower bound
      * @param upperBound scale upper bound
-     * @return a scale parameter in the form of double[featureNum + 1][2].
-     * The parameter[0][0] and parameter[0][1] stand for lower bound and upper bound.
-     * The other parameter[i][0]s and parameter[i][1]s stand for the min value and max value of this feature.
+     * @return a {@link LinearScaleParam}
      */
-    public double[][] linearScale(double lowerBound, double upperBound) {
+    public LinearScaleParam linearScale(double lowerBound, double upperBound) {
         /* step 1: initiate */
-        double[][] scaleParam = new double[this.featureNum + 1][2];
-        scaleParam[0][0] = lowerBound;
-        scaleParam[0][1] = upperBound;
-
-        for (int i = 0; i < this.featureNum; i++) {
-            scaleParam[i + 1][0] = Double.MAX_VALUE;
-            scaleParam[i + 1][1] = Double.MIN_VALUE;
-        }
+        LinearScaleParam param = new LinearScaleParam(this.featureNum);
+        param.setLowerBound(lowerBound);
+        param.setUpperBound(upperBound);
 
 		/* step 2: find out min/max value */
         for (Sample sample : this) {
-            svm_node[] features = sample.getFeatureArray();
             for (int i = 0; i < this.featureNum; i++) {
-                double currentMin = scaleParam[i + 1][0];
-                double currentMax = scaleParam[i + 1][1];
-                scaleParam[i + 1][0] = Math.min(currentMin, features[i].value);
-                scaleParam[i + 1][1] = Math.max(currentMax, features[i].value);
+                param.updateMinMax(i, sample.getFeatureValue(i));
             }
         }
 
@@ -93,18 +82,17 @@ public class Dataset extends ArrayList<Sample> {
 
             for (int i = 0; i < this.featureNum; i++) {
 
-                double featureMin = scaleParam[i + 1][0];
-                double featureMax = scaleParam[i + 1][1];
+                double featureMin = param.getFeatureMin(i);
 
                 double newFeature = (originalFeatures[i].value - featureMin)
-                        * (upperBound - lowerBound)
-                        / (featureMax - featureMin)
+                        * param.getBoundarySpan()
+                        / param.getFeatureSpan(i)
                         + lowerBound;
                 sample.modifyFeature(i, newFeature);
             }
         }
         this.isScaled = true;
-        return scaleParam;
+        return param;
     }
 
     /**
@@ -114,21 +102,16 @@ public class Dataset extends ArrayList<Sample> {
      *
      * @param scaleParam the result returned by {@code linearScale} on training data
      */
-    public void linearScaleFrom(double[][] scaleParam) {
-        double lowerBound = scaleParam[0][0];
-        double upperBound = scaleParam[0][1];
-
+    public void linearScaleFrom(LinearScaleParam scaleParam) {
         for (Sample sample : this) {
-            svm_node[] features = sample.getFeatureArray();
             for (int i = 0; i < this.featureNum; i++) {
 
-                double featureMin = scaleParam[i + 1][0];
-                double featureMax = scaleParam[i + 1][1];
+                double featureMin = scaleParam.getFeatureMin(i);
 
-                double newFeature = (features[i].value - featureMin)
-                        * (upperBound - lowerBound)
-                        / (featureMax - featureMin)
-                        + lowerBound;
+                double newFeature = (sample.getFeatureValue(i) - featureMin)
+                        * scaleParam.getBoundarySpan()
+                        / scaleParam.getFeatureSpan(i)
+                        + scaleParam.getLowerBound();
                 sample.modifyFeature(i, newFeature);
             }
             this.isScaled = true;

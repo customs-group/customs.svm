@@ -50,6 +50,10 @@ public class Sample extends ArrayList<svm_node> implements Serializable {
         return this.toArray(new svm_node[this.size()]);
     }
 
+    public double getFeatureValue(int i) {
+        return this.get(i).value;
+    }
+
     /**
      * Deep copy this sample into a new instance.
      *
