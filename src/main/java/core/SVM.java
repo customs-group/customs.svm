@@ -1,4 +1,4 @@
-package svm;
+package core;
 
 import data.Dataset;
 import data.Sample;

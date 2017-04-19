@@ -1,4 +1,4 @@
-package svm;
+package core;
 
 import data.Dataset;
 import data.SVMDBReader;
@@ -17,10 +17,10 @@ public class svmDemos {
     //~ Methods ----------------------------------------------------------------
 
     /**
-     * Read data into {@link Dataset}.
+     * Read data into {@link Dataset} from a file.
      */
     @Test
-    public void readData() {
+    public void readDataInFile() {
         SVMFileReader reader = SVMFileReader.getInstance();
         Dataset data = reader.read("./datasets/train");
     }
@@ -52,8 +52,29 @@ public class svmDemos {
         data1.record("./results/customed_linear_scale");
     }
 
+    /**
+     * Simple train demo.
+     */
     @Test
-    public void trainFileDemo() {
+    public void train() {
+        Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
+        Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
+
+        double[][] scaleParam = trainData.linearScale();
+        testData.linearScaleFrom(scaleParam);
+
+        SVM svm = SVM.getInstance();
+        svm.train(trainData);
+        // 保存模型以供后续测试使用
+        svm.saveModel("./results/svm/model");
+
+        svm_model model = svm.loadModel("./results/svm/model");
+        svm.test(model, trainData, "./results/svm/train");
+        svm.test(model, testData, "./results/svm/test");
+    }
+
+    @Test
+    public void setParam() {
         Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
         Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
 
