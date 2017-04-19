@@ -49,13 +49,13 @@ public class SVMDBReader {
 
             Dataset dataset = new Dataset();
 
-            dataset.featureNum = rs.getMetaData().getColumnCount() - 1;
+            dataset.setFeatureNum(rs.getMetaData().getColumnCount() - 1);
 
             while (rs.next()) {
                 Sample sample = new Sample();
-                sample.label = stod(rs.getString(1));
+                sample.setLabel(stod(rs.getString(1)));
 
-                for (int i = 1; i <= dataset.featureNum; i++) {
+                for (int i = 1; i <= dataset.getFeatureNum(); i++) {
                     svm_node feature = new svm_node();
                     feature.index = i;
 

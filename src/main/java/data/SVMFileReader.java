@@ -6,12 +6,7 @@ import libsvm.svm_node;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
-import static data.Utils.biLabel;
 import static data.Utils.stod;
 
 /**
@@ -63,10 +58,10 @@ public class SVMFileReader extends EdAbstractFileReader<Dataset> {
             while (line != null) {
                 String[] contents = line.split(seperator);
 
-                dataset.featureNum = contents.length - 1;
+                dataset.setFeatureNum(contents.length - 1);
 
                 Sample sample = new Sample();
-                sample.label = stod(contents[0]);
+                sample.setLabel(stod(contents[0]));
 
                 for (int i = 1; i < contents.length; i++) {
                     svm_node feature = new svm_node();

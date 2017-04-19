@@ -18,7 +18,7 @@ public class Sample extends ArrayList<svm_node> implements Serializable {
     /**
      * The label of this sample, aka class.
      */
-    public double label;
+    private double label;
 
     //~ Methods ----------------------------------------------------------------
 
@@ -85,6 +85,14 @@ public class Sample extends ArrayList<svm_node> implements Serializable {
         }
         sb.deleteCharAt(sb.length() - 1);
         return sb.toString();
+    }
+
+    public void setLabel(double label) {
+        this.label = label;
+    }
+
+    public double getLabel() {
+        return this.label;
     }
 }
 

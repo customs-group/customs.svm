@@ -1,5 +1,6 @@
-package core;
+package someone_else;
 
+import core.SVM;
 import data.Dataset;
 import data.SVMDBReader;
 import data.SVMFileReader;
@@ -69,6 +70,15 @@ public class svmDemos {
         svm.saveModel("./results/model");
     }
 
+    @Test
+    public void saveModel() {
+        Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
+        SVM svm = SVM.getInstance();
+        svm.train(trainData);
+        // 保存模型以供后续测试使用
+        svm.saveModel("./results/fuck/model");
+    }
+
     /**
      * Simple parameter selection demo.
      */
@@ -86,8 +96,8 @@ public class svmDemos {
 
         svm_model model = svm.train(trainData);
         svm.saveModel("./results/svm/model");
-        svm.test(model, trainData, true);
-        svm.test(model, testData, true);
+        svm.valid(model, trainData, true);
+        svm.valid(model, testData, true);
     }
 
     @Test
@@ -102,8 +112,8 @@ public class svmDemos {
         svm.gridSearch(trainData);
 
         svm_model model = svm.train(trainData);
-        svm.test(model, trainData, true);
-        svm.test(model, testData, true);
+        svm.valid(model, trainData, true);
+        svm.valid(model, testData, true);
     }
 
     @Test
@@ -112,7 +122,7 @@ public class svmDemos {
 
         SVM svm = SVM.getInstance();
         svm_model model = svm.loadModel("./results/svm/model");
-        svm.test(model, testData, true);
+        svm.valid(model, testData, true);
 
     }
 
@@ -186,17 +196,17 @@ public class svmDemos {
         DBManager.return_DB_connection(connection);
 
         trainData.record("./results/data.train");
-        testData.record("./results/data.test");
+        testData.record("./results/data.valid");
 
         testData.linearScaleFrom(trainData.linearScale());
 
         trainData.record("./results/data.train");
-        testData.record("./results/data.test");
+        testData.record("./results/data.valid");
 
         SVM svm = SVM.getInstance();
         svm_model model = svm.train(trainData);
-        svm.test(model, trainData, true);
-        svm.test(model, testData, true);
+        svm.valid(model, trainData, true);
+        svm.valid(model, testData, true);
 
     }
 

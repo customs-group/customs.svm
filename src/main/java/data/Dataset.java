@@ -24,7 +24,7 @@ public class Dataset extends ArrayList<Sample> {
     /**
      * Number of features of every sample.
      */
-    int featureNum = 0;
+    private int featureNum = 0;
 
     //~ Methods ----------------------------------------------------------------
 
@@ -135,8 +135,6 @@ public class Dataset extends ArrayList<Sample> {
         }
     }
 
-
-
     /**
      * Union this dataset with another one.
      * There are 3 requirements before they can be unioned.
@@ -169,6 +167,10 @@ public class Dataset extends ArrayList<Sample> {
 
     public int getFeatureNum() {
         return this.featureNum;
+    }
+
+    public void setFeatureNum(int featureNum) {
+        this.featureNum = featureNum;
     }
 
     public boolean isScaled() {

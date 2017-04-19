@@ -13,49 +13,95 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Created by edwardlol on 2017/4/18.
+ * Main working class.
+ *
+ * @author edwardlol
+ *         Created by edwardlol on 2017/4/18.
  */
 public class SVM {
     //~ Static fields/initializers ---------------------------------------------
 
     private static SVM instance;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SVM.class);
+
     /**
-     * suppress training log outputs
+     * Suppress training log outputs.
      */
     private static svm_print_interface svm_print_null = s -> {
     };
 
     /**
-     * date format for generating output file
+     * Date format for generating output file.
+     * May be removed in the future because the only usage {@link this#test} is deprecated.
      */
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_hh:mm:ss");
 
     //~ Instance fields --------------------------------------------------------
 
+    /**
+     * A reference of {@link svm_model}.
+     */
     private svm_model model;
 
+    /**
+     * An instance of {@link svm_parameter}.
+     * Only some important params are exposed.
+     */
     private final svm_parameter param = new svm_parameter();
 
-    public int C_BASE = 2;
-    public int G_BASE = 2;
-    public int C_STEP = 1;
-    public int G_STEP = 1;
-    public int C_START_VALUE = -8;
-    public int C_STOP_VALUE = 8;
-    public int G_START_VALUE = -8;
-    public int G_STOP_VALUE = 8;
+    /**
+     * The base of param C.
+     */
+    public int C_Base = 2;
+
+    /**
+     * The searching step of param C.
+     */
+    public int C_Step = 1;
+
+    /**
+     * The start power of param C.
+     */
+    public int C_StartPower = -8;
+
+    /**
+     * The stop power of param C.
+     */
+    public int C_StopPower = 8;
+
+    /**
+     * The base of param gamma.
+     */
+    public int G_Base = 2;
+
+    /**
+     * The searching step of param gamma.
+     */
+    public int G_Step = 1;
+
+    /**
+     * The start power of param gamma.
+     */
+    public int G_StartPower = -8;
+
+    /**
+     * The stop power of param gamma.
+     */
+    public int G_StopPower = 8;
 
     //~ Constructors -----------------------------------------------------------
 
+    /**
+     * Initializing default params.
+     */
     private SVM() {
-        // default params
-        param.svm_type = svm_parameter.C_SVC;
-        param.kernel_type = svm_parameter.RBF;
-        param.C = 0.015625; // for C_SVC, EPSILON_SVR and NU_SVR, default 1.0 / data.getFeatureNum()
-        param.gamma = 0.0625;
-        param.eps = 0.01;
-        param.cache_size = 100.0d;
+        this.param.svm_type = svm_parameter.C_SVC;
+        this.param.kernel_type = svm_parameter.RBF;
+        this.param.C = 0.015625; // for C_SVC, EPSILON_SVR and NU_SVR, default 1.0 / data.getFeatureNum()
+        this.param.gamma = 0.0625;
+        this.param.eps = 0.01;
+        this.param.cache_size = 100.0d;
     }
 
     public static SVM getInstance() {
@@ -68,10 +114,10 @@ public class SVM {
     //~ Methods ----------------------------------------------------------------
 
     /**
-     * train svm model
+     * Train svm model.
      *
-     * @param dataset
-     * @return
+     * @param dataset the training set
+     * @return an {@link svm_model}
      */
     public svm_model train(Dataset dataset) {
         /* set svm problem */
@@ -81,7 +127,7 @@ public class SVM {
         problem.y = new double[problem.l];
         for (int i = 0; i < problem.l; i++) {
             problem.x[i] = dataset.get(i).getFeatureArray();
-            problem.y[i] = dataset.get(i).label;
+            problem.y[i] = dataset.get(i).getLabel();
         }
 
         /* train svm model */
@@ -90,98 +136,40 @@ public class SVM {
             this.model = svm.svm_train(problem, this.param);
             return this.model;
         } else {
-            System.err.println("svm parameter error:");
-            System.err.println(error_msg);
-            return null;
-        }
-    }
-
-    public void saveModel(String modelFile) {
-        try {
-            svm.svm_save_model(modelFile, this.model);
-        } catch (IOException e) {
-            System.out.println("save svm model failed!");
-            e.printStackTrace();
-        }
-    }
-
-    public svm_model loadModel(String modelFile) {
-        try {
-            this.model = svm.svm_load_model(modelFile);
-            return this.model;
-        } catch (IOException e) {
-            System.err.println("load svm model failed!");
-            e.printStackTrace();
+            LOGGER.error("svm parameter error: {}", error_msg);
             return null;
         }
     }
 
     /**
-     * predicte the labels of test data
+     * Save the {@link this#model} to destination file.
      *
-     * @param model      model trained by train
-     * @param data       data used to test the model
-     * @param resultFile result file
+     * @param modelFile destination file name.
      */
-    @Deprecated
-    public void test1(svm_model model, Dataset data, String resultFile) {
-        final Logger logger = LoggerFactory.getLogger(SVM.class);
-
-        logger.debug("Hello world, I'm a DEBUG level message");
-        /* preparation for the log file */
-        Date now = new Date();
-        String suffix = dateFormat.format(now);
-
-        try (FileWriter fw = new FileWriter(resultFile + suffix + ".log");
-             BufferedWriter bw = new BufferedWriter(fw)) {
-
-            int hit = 0;
-
-            for (int i = 0; i < data.getSampleNum(); i++) {
-                Sample sample = data.get(i);
-
-                double realLabel = data.get(i).label;
-                double predictLabel = predict(model, sample);
-
-                bw.append("predict label: ")
-                        .append(Double.toString(predictLabel))
-                        .append("; real label: ");
-
-                bw.append(sample.toString()).flush();
-
-                if (Math.abs(predictLabel - realLabel) < 0.001) {
-                    hit++;
-                }
-            }
-            double hitRate = 100.0 * hit / data.getSampleNum();
-            System.out.println("SVM accuracy: " + String.format("%.2f", hitRate) + "%");
+    public void saveModel(String modelFile) {
+        try {
+            svm.svm_save_model(modelFile, this.model);
         } catch (IOException e) {
+            LOGGER.error("save svm model failed!");
             e.printStackTrace();
         }
     }
 
-
-    public void test(svm_model model, Dataset data, boolean debug) {
-        final Logger logger = LoggerFactory.getLogger(SVM.class);
-
-        int hit = 0;
-
-        for (int i = 0; i < data.getSampleNum(); i++) {
-            Sample sample = data.get(i);
-
-            double realLabel = sample.label;
-            double predictLabel = predict(model, sample);
-
-            if (debug) {
-                logger.debug("predict label: {}; real label: {}", predictLabel, sample.toString());
-            }
-
-            if (Math.abs(predictLabel - realLabel) < 0.001) {
-                hit++;
-            }
+    /**
+     * Load {@link this#model} from the source file.
+     *
+     * @param modelFile the source file
+     * @return {@link this#model}
+     */
+    public svm_model loadModel(String modelFile) {
+        try {
+            this.model = svm.svm_load_model(modelFile);
+            return this.model;
+        } catch (IOException e) {
+            LOGGER.error("load svm model failed!");
+            e.printStackTrace();
+            return null;
         }
-        double hitRate = 100.0 * hit / data.getSampleNum();
-        System.out.println("SVM accuracy: " + String.format("%.2f", hitRate) + "%");
     }
 
     /**
@@ -198,20 +186,27 @@ public class SVM {
     /**
      * valid model accuracy
      *
-     * @param model   model to valid
-     * @param dataset test set
-     * @return total hit num in test set
+     * @param model model to valid
+     * @param data  valid set
+     * @return total hit num in valid set
      */
-    private int valid(svm_model model, Dataset dataset) {
+    public int valid(svm_model model, Dataset data, boolean debug) {
         int hit = 0;
 
-        for (Sample aDataset : dataset) {
-            svm_node[] features = aDataset.getFeatureArray();
-            double realLabel = aDataset.label;
-            double predictLabel = svm.svm_predict(model, features);
-            if (Math.abs(predictLabel - realLabel) < 0.00001) {
+        for (Sample sample : data) {
+            double predictLabel = predict(model, sample);
+
+            if (debug) {
+                LOGGER.info("predict label: {}; real label: {}", predictLabel, sample.toString());
+            }
+
+            if (Math.abs(predictLabel - sample.getLabel()) < 0.00001) {
                 hit++;
             }
+        }
+        if (debug) {
+            double hitRate = 100.0 * hit / data.getSampleNum();
+            System.out.println("SVM accuracy: " + String.format("%.2f", hitRate) + "%");
         }
         return hit;
     }
@@ -223,49 +218,41 @@ public class SVM {
      * @return svm_parameter
      */
     public svm_parameter gridSearch(Dataset data) {
-        // no training outputs
+        // suppress training outputs
         svm.svm_set_print_string_function(svm_print_null);
 
-        int best_power_of_c = C_START_VALUE;
-        int best_power_of_g = G_START_VALUE;
+        int bestPowerOfC = this.C_StartPower;
+        int bestPowerOfG = this.G_StartPower;
 
         double bestAccuracy = 0.0;
 
-        for (int power_of_c = C_START_VALUE; power_of_c < C_STOP_VALUE; power_of_c += C_STEP) {
-            for (int power_of_g = G_START_VALUE; power_of_g < G_STOP_VALUE; power_of_g += G_STEP) {
+        for (int powerOfC = C_StartPower; powerOfC < C_StopPower; powerOfC += C_Step) {
+            for (int powerOfG = G_StartPower; powerOfG < G_StopPower; powerOfG += G_Step) {
                 // TODO: 17-4-17 hard code 10 fold, but it seems to be reasonable
-                double accuracy = crossValidation(data, power_of_c, power_of_g, 10);
-                System.out.printf("power of c: " + power_of_c + "; power of g: " + power_of_g + "; accuracy: %.2f%%", accuracy);
-                if (accuracy > 0.6
-                        && (
-                        (accuracy > bestAccuracy)
-                                || (
-                                Math.abs(accuracy - bestAccuracy) < 0.00001
-                                        && power_of_c < best_power_of_c
-                        ))) {
-                    bestAccuracy = accuracy;
-                    best_power_of_c = power_of_c;
-                    best_power_of_g = power_of_g;
+                double accuracy = crossValidation(data, powerOfC, powerOfG, 10);
+
+                System.out.printf("C: " + Math.pow(this.C_Base, powerOfC)
+                        + "gamma: " + Math.pow(this.G_Base, powerOfG)
+                        + ", accuracy: %.2f%%\n", accuracy);
+                if (accuracy > 0.6) {
+                    if ((accuracy > bestAccuracy)
+                            // when get same accuracy, prefer the smaller C
+                            || (Math.abs(accuracy - bestAccuracy) < 0.00001 && powerOfC < bestPowerOfC)) {
+                        bestAccuracy = accuracy;
+                        bestPowerOfC = powerOfC;
+                        bestPowerOfG = powerOfG;
+                    }
                 }
-                System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best accuracy: %.2f%%\n", bestAccuracy);
-//                if (hitRate < 0.6) { // pruning hehe
-//                    System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best hit rate: %.2f%%\n", best_hit_rate);
-//                } else if ((hitRate > best_hit_rate)
-//                        || (Math.abs(hitRate - best_hit_rate) < 0.00001
-//                        && power_of_c < best_power_of_c)) {
-//                    best_hit_rate = hitRate;
-//                    best_power_of_c = power_of_c;
-//                    best_power_of_g = power_of_g;
-//                    System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best hit rate: %.2f%%\n", best_hit_rate);
-//                } else {
-//                    System.out.printf("; best poc: " + best_power_of_c + "; best pog: " + best_power_of_g + "; best hit rate: %.2f%%\n", best_hit_rate);
-//                }
+                System.out.printf("best C: " + Math.pow(this.C_Base, bestPowerOfC)
+                        + ", best gamma: " + Math.pow(this.G_Base, bestPowerOfG)
+                        + ", best accuracy: %.2f%%\n", bestAccuracy);
             }
         }
-        param.C = Math.pow(2, best_power_of_c);
-        param.gamma = Math.pow(2, best_power_of_g);
-        System.out.println("best C: " + param.C + "; best gamma: " + param.gamma + "; accuracy: " + bestAccuracy);
-        return param;
+        this.param.C = Math.pow(2, bestPowerOfC);
+        this.param.gamma = Math.pow(2, bestPowerOfG);
+        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("best C: " + this.param.C + "; best gamma: " + this.param.gamma + "; accuracy: " + bestAccuracy);
+        return this.param;
     }
 
     /**
@@ -282,8 +269,8 @@ public class SVM {
             dataset.linearScale();
         }
 
-        this.param.C = Math.pow(C_BASE, power_of_c);
-        this.param.gamma = Math.pow(G_BASE, power_of_g);
+        this.param.C = Math.pow(C_Base, power_of_c);
+        this.param.gamma = Math.pow(G_Base, power_of_g);
 
         int totalHit = 0;
         // valid set length
@@ -308,13 +295,13 @@ public class SVM {
                 trainData.add(dataset.get(j).clone());
             }
             svm_model model = train(trainData);
-            totalHit += valid(model, validData);
+            totalHit += valid(model, validData, false);
         }
         // n is in set.size()
         return 100.0 * totalHit / dataset.size();
     }
 
-    //~ Getter/Setter Methods --------------------------------------------------
+    //~ Getter/Setter methods --------------------------------------------------
 
     /**
      * set the svm type
@@ -322,7 +309,7 @@ public class SVM {
      * @param svmType see{@link svm_parameter#svm_type}
      */
     public void setSVMType(int svmType) {
-        param.svm_type = svmType;
+        this.param.svm_type = svmType;
     }
 
     /**
@@ -331,7 +318,7 @@ public class SVM {
      * @param kernelType see{@link svm_parameter#kernel_type}
      */
     public void setKernelType(int kernelType) {
-        param.kernel_type = kernelType;
+        this.param.kernel_type = kernelType;
     }
 
     /**
@@ -340,7 +327,7 @@ public class SVM {
      * @param C see{@link svm_parameter#C}
      */
     public void setC(double C) {
-        param.C = C;
+        this.param.C = C;
     }
 
     /**
@@ -349,7 +336,7 @@ public class SVM {
      * @param gamma see{@link svm_parameter#gamma}
      */
     public void setGamma(double gamma) {
-        param.gamma = gamma;
+        this.param.gamma = gamma;
     }
 
     /**
@@ -358,7 +345,53 @@ public class SVM {
      * @param eps see{@link svm_parameter#eps}
      */
     public void setEps(double eps) {
-        param.eps = eps;
+        this.param.eps = eps;
+    }
+
+    //~ Deprecated methods -----------------------------------------------------
+
+    /**
+     * predicte the labels of valid data
+     *
+     * @param model      model trained by train
+     * @param data       data used to valid the model
+     * @param resultFile result file
+     */
+    @Deprecated
+    public void test(svm_model model, Dataset data, String resultFile) {
+        final Logger logger = LoggerFactory.getLogger(SVM.class);
+
+        logger.debug("Hello world, I'm a DEBUG level message");
+        /* preparation for the log file */
+        Date now = new Date();
+        String suffix = dateFormat.format(now);
+
+        try (FileWriter fw = new FileWriter(resultFile + suffix + ".log");
+             BufferedWriter bw = new BufferedWriter(fw)) {
+
+            int hit = 0;
+
+            for (int i = 0; i < data.getSampleNum(); i++) {
+                Sample sample = data.get(i);
+
+                double realLabel = data.get(i).getLabel();
+                double predictLabel = predict(model, sample);
+
+                bw.append("predict label: ")
+                        .append(Double.toString(predictLabel))
+                        .append("; real label: ");
+
+                bw.append(sample.toString()).flush();
+
+                if (Math.abs(predictLabel - realLabel) < 0.001) {
+                    hit++;
+                }
+            }
+            double hitRate = 100.0 * hit / data.getSampleNum();
+            System.out.println("SVM accuracy: " + String.format("%.2f", hitRate) + "%");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 

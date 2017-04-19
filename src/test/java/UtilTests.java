@@ -24,7 +24,7 @@ public class UtilTests {
         node2.value = 2.0d;
         sample.add(node2);
 
-        sample.label = 1.0d;
+        sample.setLabel(1.0d);
 
         System.out.println(sample.featureNum());
     }
@@ -43,7 +43,7 @@ public class UtilTests {
         node2.value = 2.0d;
         sample.add(node2);
 
-        sample.label = 1.0d;
+        sample.setLabel(1.0d);
 
         Sample sample2 = sample.clone();
         System.out.println(sample);
