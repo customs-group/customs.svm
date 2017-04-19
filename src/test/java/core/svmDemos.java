@@ -73,6 +73,9 @@ public class svmDemos {
         svm.test(model, testData, "./results/svm/test");
     }
 
+    /**
+     * Simple parameter selection demo.
+     */
     @Test
     public void setParam() {
         Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
@@ -81,16 +84,30 @@ public class svmDemos {
         double[][] scaleParam = trainData.linearScale();
         testData.linearScaleFrom(scaleParam);
 
-        trainData.record("./results/svm/train.scaled");
-        testData.record("./results/svm/test.scaled");
-
         SVM svm = SVM.getInstance();
         svm.setC(0.03125);
         svm.setGamma(0.03125);
+
         svm_model model = svm.train(trainData);
         svm.saveModel("./results/svm/model");
         svm.test(model, trainData, "./results/svm/train");
         svm.test(model, testData, "./results/svm/test");
+    }
+
+    @Test
+    public void gridSearch() {
+        Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
+        Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
+
+        double[][] scaleParam = trainData.linearScale();
+        testData.linearScaleFrom(scaleParam);
+
+        SVM svm = SVM.getInstance();
+        svm.gridSearch(trainData);
+
+        svm_model model = svm.train(trainData);
+        svm.test(model, trainData, "./results/svm/");
+        svm.test(model, testData, "./results/svm/");
     }
 
     @Test
@@ -105,21 +122,7 @@ public class svmDemos {
 
     }
 
-    @Test
-    public void gridSearchFileDemo() {
-        Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
-        Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
 
-        double[][] scaleParam = trainData.linearScale();
-        testData.linearScaleFrom(scaleParam);
-
-        SVM svm = SVM.getInstance();
-        svm.gridSearch(trainData);
-
-        svm_model model = svm.train(trainData);
-        svm.test(model, trainData, "./results/svm/");
-        svm.test(model, testData, "./results/svm/");
-    }
 
     @Test
     public void predictDBDemo() {
@@ -186,7 +189,7 @@ public class svmDemos {
         SVMDBReader reader = SVMDBReader.getInstance();
         Dataset trainData = reader.read(connection, trainQuery.toString());
         Dataset testData = reader.read(connection, testQuery.toString());
-
+        DBManager.return_DB_connection(connection);
 
         trainData.record("./results/data.train");
         testData.record("./results/data.test");
@@ -195,8 +198,6 @@ public class svmDemos {
 
         trainData.record("./results/data.train");
         testData.record("./results/data.test");
-
-        DBManager.return_DB_connection(connection);
 
         SVM svm = SVM.getInstance();
         svm_model model = svm.train(trainData);
@@ -248,6 +249,7 @@ public class svmDemos {
 
         Dataset data = reader.read(connection, query.toString());
         DBManager.return_DB_connection(connection);
+
         data.linearScale();
 
         SVM svm = SVM.getInstance();

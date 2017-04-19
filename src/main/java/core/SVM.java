@@ -21,7 +21,8 @@ public class SVM {
     /**
      * suppress training log outputs
      */
-    private static svm_print_interface svm_print_null = s -> {};
+    private static svm_print_interface svm_print_null = s -> {
+    };
 
     /**
      * date format for generating output file
@@ -66,12 +67,12 @@ public class SVM {
 
     /**
      * train svm model
-     * @param dataset
      *
+     * @param dataset
      * @return
      */
     public svm_model train(Dataset dataset) {
-		/* set svm problem */
+        /* set svm problem */
         svm_problem problem = new svm_problem();
         problem.l = dataset.size();
         problem.x = new svm_node[problem.l][];
@@ -132,24 +133,17 @@ public class SVM {
             int hit = 0;
 
             for (int i = 0; i < data.getSampleNum(); i++) {
-                svm_node[] features = data.get(i).getFeatureArray();
+                Sample sample = data.get(i);
+
                 double realLabel = data.get(i).label;
-                double predictLabel = svm.svm_predict(model, features);
+                double predictLabel = predict(model, sample);
 
                 bw.append("predict label: ")
                         .append(Double.toString(predictLabel))
-                        .append("; real label: ")
-                        .append(Double.toString(realLabel))
-                        .append(' ');
+                        .append("; real label: ");
 
-                for (int j = 0; j < data.getFeatureNum(); j++) {
-                    bw.append(Integer.toString(features[j].index))
-                            .append(':')
-                            .append(Double.toString(features[j].value))
-                            .append(' ');
-                }
-                bw.append('\n');
-                bw.flush();
+                bw.append(sample.toString()).flush();
+
                 if (Math.abs(predictLabel - realLabel) < 0.001) {
                     hit++;
                 }
@@ -162,11 +156,22 @@ public class SVM {
     }
 
     /**
+     * Predict the label of the sample with the given model.
+     *
+     * @param model  trained model
+     * @param sample sample to be predicted
+     * @return the predict label of the sample
+     */
+    public double predict(svm_model model, Sample sample) {
+        return svm.svm_predict(model, sample.getFeatureArray());
+    }
+
+
+    /**
      * valid model accuracy
      *
-     * @param model  model to valid
-     * @param dataset    test set
-     *
+     * @param model   model to valid
+     * @param dataset test set
      * @return total hit num in test set
      */
     private int valid(svm_model model, Dataset dataset) {
@@ -176,7 +181,7 @@ public class SVM {
             svm_node[] features = aDataset.getFeatureArray();
             double realLabel = aDataset.label;
             double predictLabel = svm.svm_predict(model, features);
-            if (Math.abs(predictLabel - realLabel) < 0.001) {
+            if (Math.abs(predictLabel - realLabel) < 0.00001) {
                 hit++;
             }
         }
@@ -238,11 +243,10 @@ public class SVM {
     /**
      * do cross validation
      *
-     * @param dataset       training data
-     * @param power_of_c    power of c, see{@link svm_parameter#C}
-     * @param power_of_g    power of g, see{@link svm_parameter#gamma}
-     * @param numFolds      the number n of n fold validation
-     *
+     * @param dataset    training data
+     * @param power_of_c power of c, see{@link svm_parameter#C}
+     * @param power_of_g power of g, see{@link svm_parameter#gamma}
+     * @param numFolds   the number n of n fold validation
      * @return best accuracy under this set of c and g
      */
     private double crossValidation(Dataset dataset, int power_of_c, int power_of_g, int numFolds) {
