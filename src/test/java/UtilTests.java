@@ -1,6 +1,8 @@
 import data.Sample;
 import libsvm.svm_node;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by edwardlol on 17-4-18.
@@ -46,6 +48,16 @@ public class UtilTests {
         Sample sample2 = sample.clone();
         System.out.println(sample);
         System.out.println(sample2);
+    }
+
+    @Test
+    public void logTest() {
+        final Logger logger = LoggerFactory.getLogger(UtilTests.class);
+
+        logger.debug("Hello world, I'm a DEBUG level message");
+        logger.info("Hello world, I'm an INFO level message");
+        logger.warn("Hello world, I'm a WARNING level message");
+        logger.error("Hello world, I'm an ERROR level message");
     }
 }
 
