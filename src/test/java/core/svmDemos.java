@@ -66,11 +66,7 @@ public class svmDemos {
         SVM svm = SVM.getInstance();
         svm.train(trainData);
         // 保存模型以供后续测试使用
-        svm.saveModel("./results/svm/model");
-
-        svm_model model = svm.loadModel("./results/svm/model");
-        svm.test(model, trainData, "./results/svm/train");
-        svm.test(model, testData, "./results/svm/test");
+        svm.saveModel("./results/model");
     }
 
     /**
@@ -90,8 +86,8 @@ public class svmDemos {
 
         svm_model model = svm.train(trainData);
         svm.saveModel("./results/svm/model");
-        svm.test(model, trainData, "./results/svm/train");
-        svm.test(model, testData, "./results/svm/test");
+        svm.test(model, trainData, true);
+        svm.test(model, testData, true);
     }
 
     @Test
@@ -106,19 +102,17 @@ public class svmDemos {
         svm.gridSearch(trainData);
 
         svm_model model = svm.train(trainData);
-        svm.test(model, trainData, "./results/svm/");
-        svm.test(model, testData, "./results/svm/");
+        svm.test(model, trainData, true);
+        svm.test(model, testData, true);
     }
 
     @Test
     public void predictFileDemo() {
         Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
 
-        testData.record("./results/svm/test.scaled");
-
         SVM svm = SVM.getInstance();
         svm_model model = svm.loadModel("./results/svm/model");
-        svm.test(model, testData, "./results/svm/test");
+        svm.test(model, testData, true);
 
     }
 
@@ -201,8 +195,8 @@ public class svmDemos {
 
         SVM svm = SVM.getInstance();
         svm_model model = svm.train(trainData);
-        svm.test(model, trainData, "./results/svm/");
-        svm.test(model, testData, "./results/svm/");
+        svm.test(model, trainData, true);
+        svm.test(model, testData, true);
 
     }
 

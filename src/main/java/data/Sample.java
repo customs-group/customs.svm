@@ -84,7 +84,6 @@ public class Sample extends ArrayList<svm_node> implements Serializable {
             sb.append(svm_node.index).append(':').append(svm_node.value).append(',');
         }
         sb.deleteCharAt(sb.length() - 1);
-        sb.append('\n');
         return sb.toString();
     }
 }

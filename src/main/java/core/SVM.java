@@ -3,6 +3,8 @@ package core;
 import data.Dataset;
 import data.Sample;
 import libsvm.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -114,15 +116,18 @@ public class SVM {
         }
     }
 
-
     /**
      * predicte the labels of test data
      *
-     * @param model model trained by train
-     * @param data  data used to test the model
+     * @param model      model trained by train
+     * @param data       data used to test the model
+     * @param resultFile result file
      */
-    public void test(svm_model model, Dataset data, String resultFile) {
+    @Deprecated
+    public void test1(svm_model model, Dataset data, String resultFile) {
+        final Logger logger = LoggerFactory.getLogger(SVM.class);
 
+        logger.debug("Hello world, I'm a DEBUG level message");
         /* preparation for the log file */
         Date now = new Date();
         String suffix = dateFormat.format(now);
@@ -155,6 +160,30 @@ public class SVM {
         }
     }
 
+
+    public void test(svm_model model, Dataset data, boolean debug) {
+        final Logger logger = LoggerFactory.getLogger(SVM.class);
+
+        int hit = 0;
+
+        for (int i = 0; i < data.getSampleNum(); i++) {
+            Sample sample = data.get(i);
+
+            double realLabel = sample.label;
+            double predictLabel = predict(model, sample);
+
+            if (debug) {
+                logger.debug("predict label: {}; real label: {}", predictLabel, sample.toString());
+            }
+
+            if (Math.abs(predictLabel - realLabel) < 0.001) {
+                hit++;
+            }
+        }
+        double hitRate = 100.0 * hit / data.getSampleNum();
+        System.out.println("SVM accuracy: " + String.format("%.2f", hitRate) + "%");
+    }
+
     /**
      * Predict the label of the sample with the given model.
      *
@@ -165,7 +194,6 @@ public class SVM {
     public double predict(svm_model model, Sample sample) {
         return svm.svm_predict(model, sample.getFeatureArray());
     }
-
 
     /**
      * valid model accuracy
