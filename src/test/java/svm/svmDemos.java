@@ -1,6 +1,7 @@
 package svm;
 
 import data.Dataset;
+import data.SVMDBReader;
 import data.SVMFileReader;
 import libsvm.svm_model;
 import org.junit.Test;
@@ -15,20 +16,40 @@ import java.util.Vector;
 public class svmDemos {
     //~ Methods ----------------------------------------------------------------
 
+    /**
+     * Read data into {@link Dataset}.
+     */
     @Test
-    public void readDemo() {
-        Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
-        Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
+    public void readData() {
+        SVMFileReader reader = SVMFileReader.getInstance();
+        Dataset data = reader.read("./datasets/train");
+    }
 
-        double[][] scaleParam = trainData.scale();
-        testData.scaleFrom(scaleParam);
+    /**
+     * Set different seperator of data reader.
+     */
+    @Test
+    public void setSeperater() {
+        SVMFileReader reader = SVMFileReader.getInstance();
+        Dataset data1 = reader.read("./datasets/train");
+        reader.setSeperator(",");
+        Dataset data2 = reader.read("./datasets/train.csv");
 
-        SVM svm = SVM.getInstance();
-        svm.gridSearch(trainData);
+        data1.record("results/spaceSep");
+        data2.record("results/commaSep");
+    }
 
-        svm_model model = svm.train(trainData);
-        svm.test(model, trainData, "./results/");
-        svm.test(model, testData, "./results/");
+    /**
+     * Scale the dataset in linear way.
+     */
+    @Test
+    public void linearScale() {
+        SVMFileReader reader = SVMFileReader.getInstance();
+        Dataset data1 = reader.read("./datasets/train");
+        data1.linearScale();
+        data1.record("./results/default_linear_scale");
+        data1.linearScale(0, 1);
+        data1.record("./results/customed_linear_scale");
     }
 
     @Test
@@ -36,8 +57,8 @@ public class svmDemos {
         Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
         Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
 
-        double[][] scaleParam = trainData.scale();
-        testData.scaleFrom(scaleParam);
+        double[][] scaleParam = trainData.linearScale();
+        testData.linearScaleFrom(scaleParam);
 
         trainData.record("./results/svm/train.scaled");
         testData.record("./results/svm/test.scaled");
@@ -68,8 +89,8 @@ public class svmDemos {
         Dataset trainData = SVMFileReader.getInstance().read("./datasets/train");
         Dataset testData = SVMFileReader.getInstance().read("./datasets/test");
 
-        double[][] scaleParam = trainData.scale();
-        testData.scaleFrom(scaleParam);
+        double[][] scaleParam = trainData.linearScale();
+        testData.linearScaleFrom(scaleParam);
 
         SVM svm = SVM.getInstance();
         svm.gridSearch(trainData);
@@ -141,7 +162,7 @@ public class svmDemos {
                 .append(");");
 
         Connection connection = DBManager.get_DB_connection();
-        SVMFileReader reader = SVMFileReader.getInstance();
+        SVMDBReader reader = SVMDBReader.getInstance();
         Dataset trainData = reader.read(connection, trainQuery.toString());
         Dataset testData = reader.read(connection, testQuery.toString());
 
@@ -149,7 +170,7 @@ public class svmDemos {
         trainData.record("./results/data.train");
         testData.record("./results/data.test");
 
-        testData.scaleFrom(trainData.scale());
+        testData.linearScaleFrom(trainData.linearScale());
 
         trainData.record("./results/data.train");
         testData.record("./results/data.test");
@@ -202,12 +223,11 @@ public class svmDemos {
                 .append(limit).append(");");
 
         Connection connection = DBManager.get_DB_connection();
-
-        SVMFileReader reader = SVMFileReader.getInstance();
+        SVMDBReader reader = SVMDBReader.getInstance();
 
         Dataset data = reader.read(connection, query.toString());
         DBManager.return_DB_connection(connection);
-        data.scale();
+        data.linearScale();
 
         SVM svm = SVM.getInstance();
         svm.gridSearch(data);

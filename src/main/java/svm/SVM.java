@@ -247,7 +247,7 @@ public class SVM {
      */
     private double crossValidation(Dataset dataset, int power_of_c, int power_of_g, int numFolds) {
         if (!dataset.isScaled()) {
-            dataset.scale();
+            dataset.linearScale();
         }
 
         this.param.C = Math.pow(C_BASE, power_of_c);

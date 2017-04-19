@@ -8,30 +8,28 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 /**
- * dataset of svm data
+ * The dataset structure.
+ * Consists of a list of {@link Sample}s.
  *
- * Created by edwardlol on 17-4-18.
+ * @author edwardlol
+ *         Created by edwardlol on 17-4-18.
  */
 public class Dataset extends ArrayList<Sample> {
-    //~ Static fields/initializers ---------------------------------------------
-
     //~ Instance fields --------------------------------------------------------
 
     private boolean isScaled = false;
 
-    boolean isTraining;
+    private boolean isTraining;
 
     /**
-     * number of features of every sample
+     * Number of features of every sample.
      */
     int featureNum = 0;
-
-    //~ Constructors -----------------------------------------------------------
 
     //~ Methods ----------------------------------------------------------------
 
     /**
-     * record data to file
+     * Record all samples to a file.
      *
      * @param filename file name to store data
      */
@@ -40,49 +38,35 @@ public class Dataset extends ArrayList<Sample> {
         try (FileWriter fw = new FileWriter(filename);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
-            for (int i = 0; i < super.size(); i++) {
-                Sample sample = super.get(i);
-
-                bw.append(Double.toString(sample.label)).append(' ');
-
-                svm_node[] features = sample.getFeatureArray();
-
-                for (int j = 0; j < sample.featureNum(); j++) {
-                    bw.append(Integer.toString(features[j].index))
-                            .append(':')
-                            .append(Double.toString(features[j].value))
-                            .append(' ');
-                }
-                bw.append('\n');
-                bw.flush();
+            for (Sample sample : this) {
+                bw.write(sample.toString());
             }
-            System.out.println("DataSet record done! see " + filename);
+            System.out.println("Dataset record done! see " + filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * scale training data so that all features fit in [-1.0d, 1.0d]
+     * Linear scale training data so that all features fit in [-1.0d, 1.0d]
      *
-     * @return  scale parameter, see{@link this#scale(double, double)}
+     * @return scale parameter, see{@link this#linearScale(double, double)}
      */
-    public double[][] scale() {
-        return scale(-1.0d, 1.0d);
+    public double[][] linearScale() {
+        return linearScale(-1.0d, 1.0d);
     }
 
     /**
-     * scale training data so that all features fit in [lowerBound, upperBound]
+     * Linear scale all samples so that every feature fits in [lowerBound, upperBound].
      *
      * @param lowerBound scale lower bound
      * @param upperBound scale upper bound
-     *
-     * @return  scale parameter in double[featureNum + 1][2]
-     *          the parameter[0][0] and parameter[0][1] stands for lower bound and upper bound
-     *          parameter[i][0] and parameter[i][1] stands for the min value and max value of this feature
+     * @return a scale parameter in the form of double[featureNum + 1][2].
+     * The parameter[0][0] and parameter[0][1] stand for lower bound and upper bound.
+     * The other parameter[i][0]s and parameter[i][1]s stand for the min value and max value of this feature.
      */
-    public double[][] scale(double lowerBound, double upperBound) {
-		/* step 1: initiate */
+    public double[][] linearScale(double lowerBound, double upperBound) {
+        /* step 1: initiate */
         double[][] scaleParam = new double[this.featureNum + 1][2];
         scaleParam[0][0] = lowerBound;
         scaleParam[0][1] = upperBound;
@@ -103,7 +87,7 @@ public class Dataset extends ArrayList<Sample> {
             }
         }
 
-		/* pass 3: scale */
+		/* step 3: linearScale */
         for (Sample sample : this) {
             svm_node[] originalFeatures = sample.getFeatureArray();
 
@@ -124,17 +108,16 @@ public class Dataset extends ArrayList<Sample> {
     }
 
     /**
-     * scale testing data so that it has the same scale as the training data
+     * Linear scale the dataset with a scale parameter.
+     * Usually used to scale testing data so that
+     * it has the same scaling as the training data.
      *
-     * @param scaleParam the result returned by scale on training data
+     * @param scaleParam the result returned by {@code linearScale} on training data
      */
-    public void scaleFrom(double[][] scaleParam) {
-		/* step 1: initiate feature bound */
+    public void linearScaleFrom(double[][] scaleParam) {
         double lowerBound = scaleParam[0][0];
         double upperBound = scaleParam[0][1];
 
-
-		/* pass 2: scale */
         for (Sample sample : this) {
             svm_node[] features = sample.getFeatureArray();
             for (int i = 0; i < this.featureNum; i++) {
@@ -152,17 +135,25 @@ public class Dataset extends ArrayList<Sample> {
         }
     }
 
+
+
     /**
-     * union this dataset with another
+     * Union this dataset with another one.
+     * There are 3 requirements before they can be unioned.
+     * 1. The two datasets must be equal in feature number.
+     * More specifically, they should have same features,
+     * and each feature should be at the same position.
+     * 2. The two datasets must be both unscaled, to ensure they have the same scaling parameter.
+     * 3. The two datasets should both be training data or testing data.
+     * If we meet all the 3 requirements, the {@code other} is unioned into {@code this}.
      *
      * @param other the dataset to be unioned
-     *
-     * @return  this
+     * @return this
      */
     public Dataset union(Dataset other) {
         if (this.featureNum != other.featureNum) {
             System.out.println("cannot union, two datasets has different feature numbers");
-        } else if (this.isScaled != other.isScaled) {
+        } else if (!this.isScaled && !other.isScaled) {
             System.out.println("cannot union, the union flag is different");
         } else if (this.isTraining != other.isTraining) {
             System.out.println("cannot union, the training flag is different");
@@ -182,6 +173,14 @@ public class Dataset extends ArrayList<Sample> {
 
     public boolean isScaled() {
         return this.isScaled;
+    }
+
+    public boolean isTraining() {
+        return this.isTraining;
+    }
+
+    public void setTraining(boolean training) {
+        this.isTraining = training;
     }
 }
 
