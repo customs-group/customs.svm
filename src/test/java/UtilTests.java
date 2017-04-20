@@ -1,13 +1,17 @@
+import data.Dataset;
+import data.SVMFileReader;
 import data.Sample;
 import libsvm.svm_node;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+
 /**
  * Created by edwardlol on 17-4-18.
  */
-public class UtilTests {
+public final class UtilTests {
     //~ Methods ----------------------------------------------------------------
 
     @Test
@@ -58,6 +62,18 @@ public class UtilTests {
         logger.info("Hello world, I'm an INFO level message");
         logger.warn("Hello world, I'm a WARNING level message");
         logger.error("Hello world, I'm an ERROR level message");
+    }
+
+    @Test
+    public void iterTest() {
+        SVMFileReader reader = SVMFileReader.getInstance();
+        Dataset data = reader.read("./datasets/train");
+        Iterator<double[]> itr = data.columnIter();
+
+        while (itr.hasNext()) {
+            double[] column = itr.next();
+            System.out.println(column[0]);
+        }
     }
 }
 

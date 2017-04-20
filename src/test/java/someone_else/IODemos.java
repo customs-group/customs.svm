@@ -14,11 +14,6 @@ import java.util.List;
  * Created by edwardlol on 2017/4/20.
  */
 public final class IODemos {
-
-    private IODemos() {
-
-    }
-
     //~ Methods ----------------------------------------------------------------
 
     /**

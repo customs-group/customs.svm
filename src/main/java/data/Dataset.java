@@ -1,11 +1,13 @@
 package data;
 
 import libsvm.svm_node;
+import util.EdMath;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * The dataset structure.
@@ -39,7 +41,7 @@ public class Dataset extends ArrayList<Sample> {
              BufferedWriter bw = new BufferedWriter(fw)) {
 
             for (Sample sample : this) {
-                bw.write(sample.toString());
+                bw.write(sample.toString() + '\n');
             }
             System.out.println("Dataset record done! see " + filename);
         } catch (IOException e) {
@@ -77,21 +79,7 @@ public class Dataset extends ArrayList<Sample> {
         }
 
 		/* step 3: linearScale */
-        for (Sample sample : this) {
-            svm_node[] originalFeatures = sample.getFeatureArray();
-
-            for (int i = 0; i < this.featureNum; i++) {
-
-                double featureMin = param.getFeatureMin(i);
-
-                double newFeature = (originalFeatures[i].value - featureMin)
-                        * param.getBoundarySpan()
-                        / param.getFeatureSpan(i)
-                        + lowerBound;
-                sample.modifyFeature(i, newFeature);
-            }
-        }
-        this.isScaled = true;
+        linearScaleFrom(param);
         return param;
     }
 
@@ -116,6 +104,35 @@ public class Dataset extends ArrayList<Sample> {
             }
             this.isScaled = true;
         }
+    }
+
+    public SoftScaleParam softScale() {
+        SoftScaleParam param = new SoftScaleParam(this.featureNum);
+        Itr it = this.columnIter();
+
+        while (it.hasNext()) {
+            int index = it.getCursor();
+            double[] feature = it.next();
+
+            param.setMean(index, EdMath.mean(feature));
+            param.setSD(index, EdMath.standardDeviation(feature));
+        }
+
+        softScaleFrom(param);
+        return param;
+    }
+
+    public void softScaleFrom(SoftScaleParam param) {
+        for (Sample sample : this) {
+            for (int i = 0; i < sample.size(); i++) {
+                double newFeature = (sample.getFeatureValue(i) - param.getMean(i))
+                        / param.getSD(i)
+                        / 2;
+
+                sample.modifyFeature(i, newFeature);
+            }
+        }
+        this.isScaled = true;
     }
 
     /**
@@ -144,6 +161,20 @@ public class Dataset extends ArrayList<Sample> {
         return this;
     }
 
+    /**
+     * Get the feature column in an array.
+     *
+     * @param index
+     * @return
+     */
+    public double[] getFeature(int index) {
+        double[] result = new double[this.getSampleNum()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = this.get(i).getFeatureValue(index);
+        }
+        return result;
+    }
+
     public int getSampleNum() {
         return this.size();
     }
@@ -166,6 +197,33 @@ public class Dataset extends ArrayList<Sample> {
 
     public void setTraining(boolean training) {
         this.isTraining = training;
+    }
+
+    private class Itr implements Iterator<double[]> {
+        int cursor = 0;
+        int lastRet = -1;
+
+        @Override
+        public double[] next() {
+            int i = cursor;
+            double[] next = getFeature(i);
+            lastRet = i;
+            cursor = i + 1;
+            return next;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return cursor != featureNum;
+        }
+
+        public int getCursor() {
+            return cursor;
+        }
+    }
+
+    public Itr columnIter() {
+        return new Itr();
     }
 }
 

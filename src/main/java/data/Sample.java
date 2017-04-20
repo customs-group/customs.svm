@@ -4,6 +4,7 @@ import libsvm.svm_node;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The data structure of of svm sample data.
@@ -19,6 +20,29 @@ public class Sample extends ArrayList<svm_node> implements Serializable {
      * The label of this sample, aka class.
      */
     private double label;
+
+    public Sample() {
+    }
+
+    public Sample(double[] features) {
+        super();
+        for (int i = 0; i < features.length; i++) {
+            svm_node node = new svm_node();
+            node.index = i + 1;
+            node.value = features[i];
+            this.add(node);
+        }
+    }
+
+    public Sample(List<Double> features) {
+        super();
+        for(int i = 0; i < features.size(); i++) {
+            svm_node node = new svm_node();
+            node.index = i + 1;
+            node.value = features.get(i);
+            this.add(node);
+        }
+    }
 
     //~ Methods ----------------------------------------------------------------
 
